@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2019 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2013-2020 The Linux Foundation. All rights reserved.
  * Not a contribution.
  *
  * Copyright (C) 2009 The Android Open Source Project
@@ -471,7 +471,8 @@ void AudioPolicyManagerCustom::checkOutputForAttributes(const audio_attributes_t
         }
     }
 
-    if ((srcOutputs != dstOutputs) && isInvalidationOfMusicStreamNeeded(attr)) {
+    if ((srcOutputs != dstOutputs) && (oldDevices != newDevices) &&
+         isInvalidationOfMusicStreamNeeded(attr)) {
         AudioPolicyManager::checkOutputForAttributes(attr);
     }
 }
