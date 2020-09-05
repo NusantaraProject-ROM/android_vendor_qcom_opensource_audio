@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2019 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2013-2020 The Linux Foundation. All rights reserved.
  * Not a contribution.
  *
  * Copyright (C) 2009 The Android Open Source Project
@@ -471,7 +471,8 @@ void AudioPolicyManagerCustom::checkOutputForAttributes(const audio_attributes_t
         }
     }
 
-    if ((srcOutputs != dstOutputs) && isInvalidationOfMusicStreamNeeded(attr)) {
+    if ((srcOutputs != dstOutputs) && (oldDevices != newDevices) &&
+         isInvalidationOfMusicStreamNeeded(attr)) {
         AudioPolicyManager::checkOutputForAttributes(attr);
     }
 }
@@ -629,6 +630,10 @@ bool AudioPolicyManagerCustom::isOffloadSupported(const audio_offload_info_t& of
         return false;
     }
 
+    if (audio_is_linear_pcm(offloadInfo.format) &&
+           property_get_bool("vendor.audio.pcm.direct.disable", false /* default_value */)) {
+        return false;
+    }
     // See if there is a profile to support this.
     // AUDIO_DEVICE_NONE
     sp<IOProfile> profile = getProfileForOutput(DeviceVector() /*ignore device */,
@@ -1750,8 +1755,9 @@ audio_io_handle_t AudioPolicyManagerCustom::getOutputForDevices(
         // if multiple concurrent offload decode is supported
         // do no check for reuse and also don't close previous output if its offload
         // previous output will be closed during track destruction
-        if (!mApmConfigs->isAudioMultipleOffloadEnable() &&
-                ((*flags & AUDIO_OUTPUT_FLAG_DIRECT) != 0)) {
+        if (!(mApmConfigs->isAudioMultipleOffloadEnable() &&
+                ((*flags & AUDIO_OUTPUT_FLAG_DIRECT) != 0) &&
+                ((*flags & AUDIO_OUTPUT_FLAG_MMAP_NOIRQ) == 0))) {
             for (size_t i = 0; i < mOutputs.size(); i++) {
                 sp<SwAudioOutputDescriptor> desc = mOutputs.valueAt(i);
                 if (!desc->isDuplicated() && (profile == desc->mProfile)) {
